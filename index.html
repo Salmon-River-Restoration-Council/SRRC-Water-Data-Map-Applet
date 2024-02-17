@@ -42,7 +42,8 @@
 
         // Add click event listener to the marker
         marker.on('click', function(e) {
-          updateChart(e.target.getPopup().getContent());
+          var clickedSiteCode = e.target.getPopup().getContent();
+          updateChart(clickedSiteCode);
         });
       } else {
         console.error('Undefined latitude or longitude at row index:', i, 'Row data:', row);
@@ -58,6 +59,7 @@
       dynamicTyping: true,
       skipEmptyLines: true,
       complete: function(results) {
+        populateYearSelect(results.data, siteCode);
         var selectedYear = document.getElementById('yearSelect').value;
         var filteredData = results.data.filter(function(entry) {
           return new Date(entry.DateTime).getFullYear().toString() === selectedYear;
@@ -69,11 +71,6 @@
         myChart.data.labels = labels;
         myChart.data.datasets[0].data = data;
         myChart.update();
-
-        // Populate the year select dropdown if it's empty
-        if (document.getElementById('yearSelect').options.length === 0) {
-          populateYearSelect(results.data);
-        }
       }
     });
   }
@@ -103,7 +100,7 @@
   });
 
   // Function to populate the year select dropdown and set the default year
-  function populateYearSelect(data) {
+  function populateYearSelect(data, siteCode) {
     var years = data.map(function(entry) {
       return new Date(entry.DateTime).getFullYear();
     });
@@ -112,6 +109,8 @@
     var uniqueYears = Array.from(new Set(years)).sort(function(a, b) { return b - a; });
 
     var yearSelect = document.getElementById('yearSelect');
+    yearSelect.innerHTML = ''; // Clear existing options
+
     uniqueYears.forEach(function(year) {
       var option = document.createElement('option');
       option.value = year;
@@ -120,7 +119,10 @@
     });
 
     // Set the latest year as the default
-    yearSelect.value = uniqueYears[0];
+    // yearSelect.value = uniqueYears[0];
+
+    // Update the chart for the new site and year
+    updateChart(siteCode);
   }
 
   // Event listener for year selection change
@@ -141,10 +143,6 @@
     complete: function(results) {
       console.log(results.data); // Log the parsed data to inspect it
       addMarkers(results.data);
-      // Optionally, load the first site's data to populate the year dropdown
-      if (results.data.length > 0) {
-        updateChart(results.data[0][1]); // Assuming the 1st column contains the site code
-      }
     }
   });
 </script>
