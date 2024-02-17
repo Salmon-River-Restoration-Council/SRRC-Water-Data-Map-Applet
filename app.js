@@ -1,12 +1,12 @@
-// Initialize the map
+// Initialize the map with a center point and zoom level
 var map = L.map('map').setView([41.25999138216857, -123.20132665850865], 10);
 
-// Use Esri.WorldImagery tile layer for satellite images
+// Add a tile layer to the map using Esri's World Imagery service for satellite images
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
 }).addTo(map);
 
-// Initialize the chart
+// Get the context of the canvas element for charting and initialize a new Chart.js line chart
 var ctx = document.getElementById('myChart').getContext('2d');
 var myChart = new Chart(ctx, {
   type: 'line',
@@ -30,10 +30,12 @@ var myChart = new Chart(ctx, {
   }
 });
 
-// Function to add markers to the map
+// Define a function to add circle markers to the map for each data point
 function addMarkers(data) {
   data.forEach(function(row, i) {
-    var [siteCode, latitude, longitude] = row;
+    var siteCode = row[1];
+    var latitude = row[3];
+    var longitude = row[2];
     if (latitude && longitude) {
       var marker = L.circleMarker([latitude, longitude], {
         color: 'red',
@@ -52,7 +54,7 @@ function addMarkers(data) {
   });
 }
 
-// Function to update the chart with data from the CSV file
+// Define a function to update the chart with data from a CSV file when a site is clicked
 function updateChart(siteCode) {
   Papa.parse(`SitesToDate/${siteCode}.csv`, {
     download: true,
@@ -73,7 +75,7 @@ function updateChart(siteCode) {
   });
 }
 
-// Function to populate the year select dropdown and set the default year
+// Define a function to populate a dropdown with unique years from the data and update the chart
 function populateYearSelect(data, siteCode) {
   var years = data.map(function(entry) {
     return new Date(entry.DateTime).getFullYear();
@@ -94,7 +96,7 @@ function populateYearSelect(data, siteCode) {
   updateChart(siteCode);
 }
 
-// Event listener for year selection change
+// Add an event listener to the year selection dropdown to update the chart when the year changes
 document.getElementById('yearSelect').addEventListener('change', function() {
   var siteCode = myChart.data.datasets[0].label;
   if (siteCode) {
@@ -102,7 +104,7 @@ document.getElementById('yearSelect').addEventListener('change', function() {
   }
 });
 
-// Read the CSV file and parse it
+// Parse a CSV file containing site locations and add markers to the map
 Papa.parse("Water_Sites_LatLon.csv", {
   download: true,
   header: false,
