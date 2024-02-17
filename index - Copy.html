@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Leaflet and Chart.js Example</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+
+<div id="map" style="height: 400px;"></div>
+
+<script>
+  // Initialize the map
+  var map = L.map('map').setView([41.25999138216857, -123.20132665850865], 13);
+
+
+L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+  // This layer has a transparent background
+  attribution: '© OpenStreetMap contributors, Humanitarian OSM Team',
+  maxZoom: 19
+}).addTo(map);
+  // Use Esri.WorldImagery tile layer for satellite images
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+  }).addTo(map);
+  
+  
+
+
+  // Function to create a chart
+  function createChart(canvasId) {
+    var ctx = document.getElementById(canvasId).getContext('2d');
+    return new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+        datasets: [{
+          label: '# of Votes',
+          data: [12, 19, 3, 5, 2, 3],
+          backgroundColor: [
+            'rgba(255, 99, 132, 0.2)',
+            'rgba(54, 162, 235, 0.2)',
+            'rgba(255, 206, 86, 0.2)',
+            'rgba(75, 192, 192, 0.2)',
+            'rgba(153, 102, 255, 0.2)',
+            'rgba(255, 159, 64, 0.2)'
+          ],
+          borderColor: [
+            'rgba(255, 99, 132, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        },
+        responsive: true,
+        maintainAspectRatio: true
+      }
+    });
+  }
+
+  // Function to add markers to the map
+  function addMarkers(data) {
+    for (var i = 0; i < data.length; i++) {
+      var row = data[i];
+      var latitude = row[6]; // Assuming the 7th column contains latitude
+      var longitude = row[5]; // Assuming the 6th column contains longitude
+      if (latitude != null && longitude != null) {
+        // Use L.circleMarker to create a small red circle
+        var marker = L.circleMarker([latitude, longitude], {
+          color: 'red',
+          fillColor: '#f03',
+          fillOpacity: 0.5,
+          radius: 5 // Adjust the size as needed
+        }).addTo(map);
+
+        // Create a unique ID for each canvas
+        var canvasId = 'chart-canvas-' + i;
+
+        // Create a popup with a canvas element
+        var popupContent = '<canvas id="' + canvasId + '" width="150" height="150"></canvas>';
+        marker.bindPopup(popupContent).on('popupopen', function (popupEvent) {
+          // Once the popup is open, create the chart
+          var canvasId = popupEvent.popup.getContent().slice('<canvas id="'.length, -'" width="150" height="150"></canvas>'.length);
+          createChart(canvasId);
+        });
+      } else {
+        console.error('Undefined latitude or longitude at row index:', i, 'Row data:', row);
+      }
+    }
+  }
+
+  // Read the CSV file and parse it
+  Papa.parse("tbl_Sites.csv", {
+    download: true,
+    header: false, // Set to false since there is no header
+    dynamicTyping: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      console.log(results.data); // Log the parsed data to inspect it
+      addMarkers(results.data);
+    }
+  });
+
+</script>
+
+</body>
+</html>
