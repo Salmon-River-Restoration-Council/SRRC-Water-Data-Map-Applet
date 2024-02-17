@@ -10,6 +10,7 @@
 <body>
 
 <div id="map" style="height: 800px;"></div>
+<select id="yearSelect"></select>
 <canvas id="myChart" width="400" height="400"></canvas>
 
 <script>
@@ -57,12 +58,22 @@
       dynamicTyping: true,
       skipEmptyLines: true,
       complete: function(results) {
-        var labels = results.data.map(function(entry) { return entry.DateTime; });
-        var data = results.data.map(function(entry) { return entry.TempC; });
+        var selectedYear = document.getElementById('yearSelect').value;
+        var filteredData = results.data.filter(function(entry) {
+          return new Date(entry.DateTime).getFullYear().toString() === selectedYear;
+        });
+
+        var labels = filteredData.map(function(entry) { return entry.DateTime; });
+        var data = filteredData.map(function(entry) { return entry.TempC; });
 
         myChart.data.labels = labels;
         myChart.data.datasets[0].data = data;
         myChart.update();
+
+        // Populate the year select dropdown if it's empty
+        if (document.getElementById('yearSelect').options.length === 0) {
+          populateYearSelect(results.data);
+        }
       }
     });
   }
@@ -91,6 +102,36 @@
     }
   });
 
+  // Function to populate the year select dropdown and set the default year
+  function populateYearSelect(data) {
+    var years = data.map(function(entry) {
+      return new Date(entry.DateTime).getFullYear();
+    });
+
+    // Get unique years and sort them in descending order
+    var uniqueYears = Array.from(new Set(years)).sort(function(a, b) { return b - a; });
+
+    var yearSelect = document.getElementById('yearSelect');
+    uniqueYears.forEach(function(year) {
+      var option = document.createElement('option');
+      option.value = year;
+      option.text = year;
+      yearSelect.appendChild(option);
+    });
+
+    // Set the latest year as the default
+    yearSelect.value = uniqueYears[0];
+  }
+
+  // Event listener for year selection change
+  document.getElementById('yearSelect').addEventListener('change', function() {
+    // Trigger chart update when a new year is selected
+    var siteCode = myChart.data.datasets[0].label; // Assuming the label contains the site code
+    if (siteCode) {
+      updateChart(siteCode);
+    }
+  });
+
   // Read the CSV file and parse it
   Papa.parse("Water_Sites_LatLon.csv", {
     download: true,
@@ -100,46 +141,12 @@
     complete: function(results) {
       console.log(results.data); // Log the parsed data to inspect it
       addMarkers(results.data);
+      // Optionally, load the first site's data to populate the year dropdown
+      if (results.data.length > 0) {
+        updateChart(results.data[0][1]); // Assuming the 1st column contains the site code
+      }
     }
   });
-
-  // Initialize the chart
-  // var ctx = document.getElementById('myChart').getContext('2d');
-  // var myChart = new Chart(ctx, {
-  //   type: 'bar',
-  //   data: {
-  //     labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-  //     datasets: [{
-  //       label: '# of Votes',
-  //       data: [12, 19, 3, 5, 2, 3],
-  //       backgroundColor: [
-  //         'rgba(255, 99, 132, 0.2)',
-  //         'rgba(54, 162, 235, 0.2)',
-  //         'rgba(255, 206, 86, 0.2)',
-  //         'rgba(75, 192, 192, 0.2)',
-  //         'rgba(153, 102, 255, 0.2)',
-  //         'rgba(255, 159, 64, 0.2)'
-  //       ],
-  //       borderColor: [
-  //         'rgba(255, 99, 132, 1)',
-  //         'rgba(54, 162, 235, 1)',
-  //         'rgba(255, 206, 86, 1)',
-  //         'rgba(75, 192, 192, 1)',
-  //         'rgba(153, 102, 255, 1)',
-  //         'rgba(255, 159, 64, 1)'
-  //       ],
-  //       borderWidth: 1
-  //     }]
-  //   },
-  //   options: {
-  //     scales: {
-  //       y: {
-  //         beginAtZero: true
-  //       }
-  //     }
-  //   }
-  // });
 </script>
-
 </body>
 </html>
