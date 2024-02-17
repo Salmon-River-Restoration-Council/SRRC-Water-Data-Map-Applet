@@ -25,23 +25,71 @@
   function addMarkers(data) {
     for (var i = 0; i < data.length; i++) {
       var row = data[i];
-      var latitude = row[3]; // Assuming the 7th column contains latitude
-      var longitude = row[2]; // Assuming the 6th column contains longitude
+      var latitude = row[3];
+      var longitude = row[2];
+      var siteCode = row[1]; // Assuming the 1st column contains the site code
+
       if (latitude != null && longitude != null) {
-        // Use L.circleMarker to create a small red circle
         var marker = L.circleMarker([latitude, longitude], {
           color: 'red',
           fillColor: '#f03',
           fillOpacity: 0.5,
-          radius: 5 // Adjust the size as needed
+          radius: 5
         }).addTo(map);
-        var popupText = row[1]; // Assuming the 2nd column contains popup text
-        marker.bindPopup(popupText);
+
+        marker.bindPopup(siteCode);
+
+        // Add click event listener to the marker
+        marker.on('click', function(e) {
+          updateChart(e.target.getPopup().getContent());
+        });
       } else {
         console.error('Undefined latitude or longitude at row index:', i, 'Row data:', row);
       }
     }
   }
+
+  // Function to update the chart with data from the CSV file
+  function updateChart(siteCode) {
+    Papa.parse(`SitesToDate/${siteCode}.csv`, {
+      download: true,
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        var labels = results.data.map(function(entry) { return entry.DateTime; });
+        var data = results.data.map(function(entry) { return entry.TempC; });
+
+        myChart.data.labels = labels;
+        myChart.data.datasets[0].data = data;
+        myChart.update();
+      }
+    });
+  }
+
+  // Initialize the chart
+  var ctx = document.getElementById('myChart').getContext('2d');
+  var myChart = new Chart(ctx, {
+    type: 'line', // Change to 'line' type
+    data: {
+      labels: [], // Initial empty labels
+      datasets: [{
+        label: 'Temperature (°C)',
+        data: [], // Initial empty data
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1,
+        fill: false
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: false
+        }
+      }
+    }
+  });
 
   // Read the CSV file and parse it
   Papa.parse("Water_Sites_LatLon.csv", {
@@ -56,41 +104,41 @@
   });
 
   // Initialize the chart
-  var ctx = document.getElementById('myChart').getContext('2d');
-  var myChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-      datasets: [{
-        label: '# of Votes',
-        data: [12, 19, 3, 5, 2, 3],
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.2)',
-          'rgba(54, 162, 235, 0.2)',
-          'rgba(255, 206, 86, 0.2)',
-          'rgba(75, 192, 192, 0.2)',
-          'rgba(153, 102, 255, 0.2)',
-          'rgba(255, 159, 64, 0.2)'
-        ],
-        borderColor: [
-          'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(75, 192, 192, 1)',
-          'rgba(153, 102, 255, 1)',
-          'rgba(255, 159, 64, 1)'
-        ],
-        borderWidth: 1
-      }]
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: true
-        }
-      }
-    }
-  });
+  // var ctx = document.getElementById('myChart').getContext('2d');
+  // var myChart = new Chart(ctx, {
+  //   type: 'bar',
+  //   data: {
+  //     labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+  //     datasets: [{
+  //       label: '# of Votes',
+  //       data: [12, 19, 3, 5, 2, 3],
+  //       backgroundColor: [
+  //         'rgba(255, 99, 132, 0.2)',
+  //         'rgba(54, 162, 235, 0.2)',
+  //         'rgba(255, 206, 86, 0.2)',
+  //         'rgba(75, 192, 192, 0.2)',
+  //         'rgba(153, 102, 255, 0.2)',
+  //         'rgba(255, 159, 64, 0.2)'
+  //       ],
+  //       borderColor: [
+  //         'rgba(255, 99, 132, 1)',
+  //         'rgba(54, 162, 235, 1)',
+  //         'rgba(255, 206, 86, 1)',
+  //         'rgba(75, 192, 192, 1)',
+  //         'rgba(153, 102, 255, 1)',
+  //         'rgba(255, 159, 64, 1)'
+  //       ],
+  //       borderWidth: 1
+  //     }]
+  //   },
+  //   options: {
+  //     scales: {
+  //       y: {
+  //         beginAtZero: true
+  //       }
+  //     }
+  //   }
+  // });
 </script>
 
 </body>
