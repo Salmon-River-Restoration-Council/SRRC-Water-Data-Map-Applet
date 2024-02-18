@@ -58,8 +58,8 @@ function addMarkers(data) {
           dataset.data = [];
         });
         myChart.update();
-        // Load new data
-        loadChartData(currentSiteCode);
+        // Load new data and populate the year select dropdown
+        loadSiteData(currentSiteCode);
       });
     } else {
       console.error('Undefined latitude or longitude at row index:', i, 'Row data:', row);
@@ -67,24 +67,30 @@ function addMarkers(data) {
   });
 }
 
-// Define a function to load chart data
-function loadChartData(siteCode) {
+// Define a function to load site data and populate the year select dropdown
+function loadSiteData(siteCode) {
   Papa.parse(`SitesToDate/${siteCode}.csv`, {
     download: true,
     header: true,
     dynamicTyping: true,
     skipEmptyLines: true,
     complete: function(results) {
-      var selectedYear = document.getElementById('yearSelect').value;
-      var filteredData = results.data.filter(function(entry) {
-        return new Date(entry.DateTime).getFullYear().toString() === selectedYear;
-      });
-
-      myChart.data.labels = filteredData.map(function(entry) { return entry.DateTime; });
-      myChart.data.datasets[0].data = filteredData.map(function(entry) { return entry.TempC; });
-      myChart.update();
+      populateYearSelect(results.data);
+      loadChartData(siteCode, results.data);
     }
   });
+}
+
+// Define a function to load chart data based on the siteCode and filtered by the selected year
+function loadChartData(siteCode, data) {
+  var selectedYear = document.getElementById('yearSelect').value;
+  var filteredData = data.filter(function(entry) {
+    return new Date(entry.DateTime).getFullYear().toString() === selectedYear;
+  });
+
+  myChart.data.labels = filteredData.map(function(entry) { return entry.DateTime; });
+  myChart.data.datasets[0].data = filteredData.map(function(entry) { return entry.TempC; });
+  myChart.update();
 }
 
 // Define a function to populate a dropdown with unique years from the data
@@ -95,6 +101,7 @@ function populateYearSelect(data) {
 
   var uniqueYears = Array.from(new Set(years)).sort(function(a, b) { return b - a; });
   var yearSelect = document.getElementById('yearSelect');
+  var previouslySelectedYear = yearSelect.value; // Store the previously selected year
   yearSelect.innerHTML = '';
 
   uniqueYears.forEach(function(year) {
@@ -103,12 +110,19 @@ function populateYearSelect(data) {
     option.text = year;
     yearSelect.appendChild(option);
   });
+
+  // Set the year select value to the previously selected year if it's available
+  if (uniqueYears.includes(parseInt(previouslySelectedYear))) {
+    yearSelect.value = previouslySelectedYear;
+  } else if (uniqueYears.length > 0) {
+    yearSelect.value = uniqueYears[0];
+  }
 }
 
 // Add an event listener to the year selection dropdown to update the chart when the year changes
 document.getElementById('yearSelect').addEventListener('change', function() {
   if (currentSiteCode) { // Use the stored currentSiteCode
-    loadChartData(currentSiteCode);
+    loadSiteData(currentSiteCode);
   }
 });
 
@@ -120,19 +134,5 @@ Papa.parse("Water_Sites_LatLon.csv", {
   skipEmptyLines: true,
   complete: function(results) {
     addMarkers(results.data);
-    // Populate the year select with the first site's data as an example
-    // You might want to change this to a more appropriate call depending on your app's logic
-    if (results.data.length > 0) {
-      var firstSiteCode = results.data[0][1];
-      Papa.parse(`SitesToDate/${firstSiteCode}.csv`, {
-        download: true,
-        header: true,
-        dynamicTyping: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          populateYearSelect(results.data);
-        }
-      });
-    }
   }
 });
