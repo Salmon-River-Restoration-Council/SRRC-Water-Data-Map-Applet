@@ -1,35 +1,17 @@
 <!DOCTYPE html>
-<!-- The document type declaration, defining this document as an HTML5 document -->
-
 <html>
 <head>
   <title>SRRC Water Data Mapplet</title>
-  <!-- Title of the webpage, shown in the browser tab -->
-
-  <!-- Link to the Leaflet CSS file for styling the map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-
-  <!-- Script tag to include the Leaflet JavaScript library for interactive maps -->
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-
-  <!-- Script tag to include the Chart.js library for creating charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Script tag to include the PapaParse library for parsing CSV files -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 </head>
 <body>
 
-<!-- Div element where the Leaflet map will be rendered, with a set height -->
 <div id="map" style="height: 800px;"></div>
-
-<!-- Dropdown select element for choosing a year, which will update the chart -->
 <select id="yearSelect"></select>
 
-<!-- Canvas element where the Chart.js chart will be rendered -->
-<canvas id="myChart" width="400" height="400"></canvas>
-
-<!-- External JavaScript file that contains the logic for the map and chart -->
 <script src="app.js"></script>
 
 </body>

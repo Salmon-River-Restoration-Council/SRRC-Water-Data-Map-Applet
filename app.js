@@ -9,30 +9,6 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
 // Initialize a variable to store the current siteCode
 var currentSiteCode = null;
 
-// Get the context of the canvas element for charting and initialize a new Chart.js line chart
-var ctx = document.getElementById('myChart').getContext('2d');
-var myChart = new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels: [],
-    datasets: [{
-      label: 'Temperature (°C)',
-      data: [],
-      backgroundColor: 'rgba(54, 162, 235, 0.2)',
-      borderColor: 'rgba(54, 162, 235, 1)',
-      borderWidth: 1,
-      fill: false
-    }]
-  },
-  options: {
-    scales: {
-      y: {
-        beginAtZero: false
-      }
-    }
-  }
-});
-
 // Define a function to add circle markers to the map for each data point
 function addMarkers(data) {
   data.forEach(function(row, i) {
@@ -48,18 +24,42 @@ function addMarkers(data) {
         radius: 5
       }).addTo(map);
 
-      marker.bindPopup(siteCode);
-
       marker.on('click', function(e) {
-        currentSiteCode = e.target.getPopup().getContent(); // Store the current siteCode
-        // Clear the chart before loading new data
-        myChart.data.labels = [];
-        myChart.data.datasets.forEach((dataset) => {
-          dataset.data = [];
+        currentSiteCode = siteCode; // Store the current siteCode
+        loadSiteData(currentSiteCode, function(chartData) {
+          // Create a popup with a specific id to host the chart
+          var popupContent = `<div id="chart-container-${siteCode}" style="width: 400px; height: 400px;"></div>`;
+          marker.bindPopup(popupContent).openPopup();
+
+          // Render the chart inside the popup after the data is loaded
+          var chartContainer = L.DomUtil.get(`chart-container-${siteCode}`);
+          if (chartContainer) {
+            var canvas = document.createElement('canvas');
+            chartContainer.appendChild(canvas);
+            var ctx = canvas.getContext('2d');
+            new Chart(ctx, {
+              type: 'line',
+              data: {
+                labels: chartData.labels,
+                datasets: [{
+                  label: 'Temperature (°C)',
+                  data: chartData.data,
+                  backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                  borderColor: 'rgba(54, 162, 235, 1)',
+                  borderWidth: 1,
+                  fill: false
+                }]
+              },
+              options: {
+                scales: {
+                  y: {
+                    beginAtZero: false
+                  }
+                }
+              }
+            });
+          }
         });
-        myChart.update();
-        // Load new data and populate the year select dropdown
-        loadSiteData(currentSiteCode);
       });
     } else {
       console.error('Undefined latitude or longitude at row index:', i, 'Row data:', row);
@@ -68,7 +68,7 @@ function addMarkers(data) {
 }
 
 // Define a function to load site data and populate the year select dropdown
-function loadSiteData(siteCode) {
+function loadSiteData(siteCode, callback) {
   Papa.parse(`SitesToDate/${siteCode}.csv`, {
     download: true,
     header: true,
@@ -76,7 +76,10 @@ function loadSiteData(siteCode) {
     skipEmptyLines: true,
     complete: function(results) {
       populateYearSelect(results.data);
-      loadChartData(siteCode, results.data);
+      var chartData = loadChartData(siteCode, results.data);
+      if (typeof callback === 'function') {
+        callback(chartData);
+      }
     }
   });
 }
@@ -88,9 +91,12 @@ function loadChartData(siteCode, data) {
     return new Date(entry.DateTime).getFullYear().toString() === selectedYear;
   });
 
-  myChart.data.labels = filteredData.map(function(entry) { return entry.DateTime; });
-  myChart.data.datasets[0].data = filteredData.map(function(entry) { return entry.TempC; });
-  myChart.update();
+  var chartData = {
+    labels: filteredData.map(function(entry) { return entry.DateTime; }),
+    data: filteredData.map(function(entry) { return entry.TempC; })
+  };
+
+  return chartData;
 }
 
 // Define a function to populate a dropdown with unique years from the data
