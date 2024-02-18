@@ -28,7 +28,7 @@ function addMarkers(data) {
         currentSiteCode = siteCode; // Store the current siteCode
         loadSiteData(currentSiteCode, function(chartData) {
           // Create a popup with a specific id to host the chart
-          var popupContent = `<div id="chart-container-${siteCode}" style="width: 400px; height: 400px;"></div>`;
+          var popupContent = `<div id="chart-container-${siteCode}" style="width: 200px; height: 200px;"></div><select id="yearSelect"></select>`;
           marker.bindPopup(popupContent).openPopup();
 
           // Render the chart inside the popup after the data is loaded
