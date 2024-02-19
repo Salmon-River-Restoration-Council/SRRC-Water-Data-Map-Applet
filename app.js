@@ -9,28 +9,64 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
 // Initialize a variable to store the current siteCode
 let currentSiteCode = null;
 
-// Define a function to add circle markers to the map for each data point
+// Define a function to check if a CSV file exists for the given siteCode
+function checkCsvFileExists(siteCode, callback) {
+  const xhr = new XMLHttpRequest();
+  xhr.open('HEAD', `SitesToDate/${siteCode}.csv`, true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        callback(true); // File exists
+      } else {
+        callback(false); // File does not exist
+      }
+    }
+  };
+  xhr.send();
+}
+
+// Modify the addMarkers function to include the file existence check
 function addMarkers(data) {
   data.forEach(([siteName, siteCode, longitude, latitude]) => {
     if (latitude && longitude) {
-      const marker = L.circleMarker([latitude, longitude], {
-        color: 'lightblue',
-        fillColor: 'blue',
-        fillOpacity: 0.5,
-        radius: 5
-      }).addTo(map);
+      // Check if the CSV file exists
+      checkCsvFileExists(siteCode, (exists) => {
+        let markerOptions = {
+          color: 'lightblue',
+          fillColor: 'blue',
+          fillOpacity: 0.5,
+          radius: 5
+        };
 
-      marker.on('click', () => {
-        currentSiteCode = siteCode; // Store the current siteCode
-        loadSiteData(siteCode, (chartData, uniqueYears) => {
-          const popupContent = createPopupContent(siteName, siteCode, uniqueYears);
-          marker.bindPopup(popupContent, { minWidth: 500 }).openPopup();
-          // Inside the loadSiteData callback, before calling renderChart
-          console.log('Chart Data for Rendering:', chartData); // Debugging line
-          renderChart(`chart-container-${siteCode}`, chartData);
-          // renderChart(`chart-container-${siteCode}`, chartData); // Render chart with latest year data
-          if (uniqueYears.length > 1) { // Only attach listener if more than one year of data
-            attachYearSelectListener(siteCode, chartData);
+        let popupContent = '';
+
+        if (exists) {
+          // File exists, proceed as normal
+          popupContent = createPopupContent(siteName, siteCode, []);
+          markerOptions.fillColor = 'blue';
+        } else {
+          // File does not exist, show a message and use a red marker
+          popupContent = `No data available for ${siteCode}`;
+          markerOptions.color = 'red';
+          markerOptions.fillColor = 'red';
+        }
+
+        const marker = L.circleMarker([latitude, longitude], markerOptions).addTo(map);
+
+        marker.on('click', () => {
+          if (exists) {
+            currentSiteCode = siteCode; // Store the current siteCode
+            loadSiteData(siteCode, (chartData, uniqueYears) => {
+              popupContent = createPopupContent(siteName, siteCode, uniqueYears);
+              marker.bindPopup(popupContent, { minWidth: 500 }).openPopup();
+              console.log('Chart Data for Rendering:', chartData); // Debugging line
+              renderChart(`chart-container-${siteCode}`, chartData);
+              if (uniqueYears.length > 1) { // Only attach listener if more than one year of data
+                attachYearSelectListener(siteCode, chartData);
+              }
+            });
+          } else {
+            marker.bindPopup(popupContent, { minWidth: 500 }).openPopup();
           }
         });
       });
