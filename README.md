@@ -22,13 +22,13 @@ Before you can run the mapplet locally, you need to have the following installed
 Clone the repository to your local machine using the following command:
 
 ```bash
-git clone https://github.com/00x29a/SRRC-WATER-DATA-MAP-APPLET.git
+git clone https://github.com/00x29a/SRRC-Water-Data-Map-Applet.git
 ```
 
 Navigate to the cloned repository's directory:
 
 ```bash
-cd SRRC-WATER-DATA-MAP-APPLET
+cd SRRC-Water-Data-Map-Applet
 ```
 
 ## Usage
