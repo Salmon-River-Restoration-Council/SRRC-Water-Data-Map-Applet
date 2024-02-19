@@ -1,5 +1,5 @@
 // Initialize the map with a center point and zoom level
-var map = L.map('map').setView([41.25999138216857, -123.20132665850865], 10);
+const map = L.map('map').setView([41.25999138216857, -123.20132665850865], 10);
 
 // Add a tile layer to the map using Esri's World Imagery service for satellite images
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -7,61 +7,59 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
 }).addTo(map);
 
 // Initialize a variable to store the current siteCode
-var currentSiteCode = null;
+let currentSiteCode = null;
 
 // Define a function to add circle markers to the map for each data point
 function addMarkers(data) {
-  data.forEach(function(row) {
-    var siteName = row[0];
-    var siteCode = row[1];
-    var latitude = row[3];
-    var longitude = row[2];
+  data.forEach(([siteName, siteCode, longitude, latitude]) => {
     if (latitude && longitude) {
-      var marker = L.circleMarker([latitude, longitude], {
+      const marker = L.circleMarker([latitude, longitude], {
         color: 'lightblue',
         fillColor: 'blue',
         fillOpacity: 0.5,
         radius: 5
       }).addTo(map);
 
-      marker.on('click', function() {
+      marker.on('click', () => {
         currentSiteCode = siteCode; // Store the current siteCode
-        loadSiteData(currentSiteCode, function(chartData, uniqueYears) {
-          // Create a popup with a specific id to host the chart and the year dropdown
-          var popupContent = `
-            <div style="width: 400px;">
-              <select id="yearSelect-${siteCode}" class="year-select">
-                ${uniqueYears.map(year => `<option value="${year}">${year}</option>`).join('')}
-              </select><h2>${siteName}</h2>
-              <div id="chart-container-${siteCode}" style="height: 400px;"></div>
-            </div>
-          `;
-          marker.bindPopup(popupContent, { minWidth: 420 }).openPopup();
-
-          // Render the chart inside the popup after the data is loaded
+        loadSiteData(siteCode, (chartData, uniqueYears) => {
+          const popupContent = createPopupContent(siteName, siteCode, uniqueYears);
+          marker.bindPopup(popupContent, { minWidth: 500 }).openPopup();
+          // Inside the loadSiteData callback, before calling renderChart
+          console.log('Chart Data for Rendering:', chartData); // Debugging line
           renderChart(`chart-container-${siteCode}`, chartData);
-
-          // Add change event listener to the year dropdown inside the popup
-          var yearSelectElement = L.DomUtil.get(`yearSelect-${siteCode}`);
-          L.DomEvent.on(yearSelectElement, 'change', function(e) {
-            var selectedYear = e.target.value;
-            var filteredChartData = loadChartData(currentSiteCode, chartData.allData, selectedYear);
-            renderChart(`chart-container-${siteCode}`, filteredChartData);
-          });
+          // renderChart(`chart-container-${siteCode}`, chartData); // Render chart with latest year data
+          if (uniqueYears.length > 1) { // Only attach listener if more than one year of data
+            attachYearSelectListener(siteCode, chartData);
+          }
         });
       });
     }
   });
 }
 
+// Define a function to create the popup content
+function createPopupContent(siteName, siteCode, uniqueYears) {
+  const currentYear = new Date().getFullYear().toString();
+  return `
+    <h2>${siteName}</h2> Download: <a href ="SitesToDate/${siteCode}.csv">${siteCode}.csv</a>
+    <div style="width: 450px;">
+      <select id="yearSelect-${siteCode}" class="year-select">
+        ${uniqueYears.map(year => `<option value="${year}"${year === currentYear ? ' selected' : ''}>${year}</option>`).join('')}
+      </select>
+      <div id="chart-container-${siteCode}" style="height: 400px;"></div>
+    </div>
+  `;
+}
+
 // Define a function to render the chart in a given container with the provided data
 function renderChart(containerId, chartData) {
-  var chartContainer = L.DomUtil.get(containerId);
+  const chartContainer = L.DomUtil.get(containerId);
   if (chartContainer) {
     chartContainer.innerHTML = ''; // Clear any existing chart
-    var canvas = document.createElement('canvas');
+    const canvas = document.createElement('canvas');
     chartContainer.appendChild(canvas);
-    var ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
     new Chart(ctx, {
       type: 'line',
       data: {
@@ -72,7 +70,8 @@ function renderChart(containerId, chartData) {
           backgroundColor: 'rgba(54, 162, 235, 0.2)',
           borderColor: 'rgba(54, 162, 235, 1)',
           borderWidth: 1,
-          fill: false
+          fill: false,
+          pointRadius: 0
         }]
       },
       options: {
@@ -88,7 +87,17 @@ function renderChart(containerId, chartData) {
   }
 }
 
-// Define a function to load site data and populate the year select dropdown
+// Define a function to attach a listener to the year select dropdown
+function attachYearSelectListener(siteCode, chartData) {
+  const yearSelectElement = L.DomUtil.get(`yearSelect-${siteCode}`);
+  L.DomEvent.on(yearSelectElement, 'change', (e) => {
+    const selectedYear = e.target.value;
+    const filteredChartData = getChartDataForYear(chartData.allData, selectedYear);
+    renderChart(`chart-container-${siteCode}`, filteredChartData);
+  });
+}
+
+// Define a function to load site data, populate the year select dropdown, and render the chart
 function loadSiteData(siteCode, callback) {
   Papa.parse(`SitesToDate/${siteCode}.csv`, {
     download: true,
@@ -96,40 +105,42 @@ function loadSiteData(siteCode, callback) {
     dynamicTyping: true,
     skipEmptyLines: true,
     complete: function(results) {
-      var uniqueYears = populateYearSelect(results.data);
-      var chartData = {
+      const uniqueYears = getUniqueYears(results.data);
+      const latestYear = uniqueYears[0]; // Get the latest year from the dataset
+      const chartData = {
         allData: results.data,
-        ...loadChartData(siteCode, results.data)
+        ...getChartDataForYear(results.data, latestYear) // Load chart data for the latest year
       };
-      if (typeof callback === 'function') {
-        callback(chartData, uniqueYears);
-      }
+      callback(chartData, uniqueYears);
     }
   });
 }
 
-// Define a function to load chart data based on the siteCode and filtered by the selected year
-function loadChartData(siteCode, data, selectedYear = new Date().getFullYear().toString()) {
-  var filteredData = data.filter(function(entry) {
-    return new Date(entry.DateTime).getFullYear().toString() === selectedYear;
+// Define a function to get chart data for a specific year
+function getChartDataForYear(data, selectedYear) {
+  // Ensure selectedYear is a string since we're comparing with string values
+  selectedYear = selectedYear.toString();
+  const filteredData = data.filter(entry => {
+    // Parse the date and compare the year as a string
+    const entryYear = new Date(entry.DateTime).getFullYear().toString();
+    return entryYear === selectedYear;
   });
 
-  var chartData = {
-    labels: filteredData.map(function(entry) { return entry.DateTime; }),
-    data: filteredData.map(function(entry) { return entry.TempC; })
-  };
+  // If there's no data for the selected year, return empty arrays
+  if (filteredData.length === 0) {
+    return { labels: [], data: [] };
+  }
 
-  return chartData;
+  return {
+    labels: filteredData.map(entry => entry.DateTime),
+    data: filteredData.map(entry => entry.TempC)
+  };
 }
 
-// Define a function to populate a dropdown with unique years from the data
-function populateYearSelect(data) {
-  var years = data.map(function(entry) {
-    return new Date(entry.DateTime).getFullYear();
-  });
-
-  var uniqueYears = Array.from(new Set(years)).sort(function(a, b) { return b - a; });
-  return uniqueYears;
+// Define a function to get unique years from the data
+function getUniqueYears(data) {
+  const years = data.map(entry => new Date(entry.DateTime).getFullYear());
+  return [...new Set(years)].sort((a, b) => b - a);
 }
 
 // Parse a CSV file containing site locations and add markers to the map
