@@ -75,17 +75,18 @@ function addMarkers(data) {
 }
 
 // Define a function to create the popup content
+// Define a function to create the popup content
 function createPopupContent(siteName, siteCode, uniqueYears) {
   const currentYear = new Date().getFullYear().toString();
 
   return `
     <div style="width: 490px;">
-      <strong>${siteName}</strong>  
+      <strong>${siteName}</strong>
       <div>
-        <label for="yearSelect-${siteCode}">Select Year:</label> 
-        <select id="yearSelect-${siteCode}" class="year-select"> 
+        <label for="yearSelect-${siteCode}">Select Year:</label>
+        <select id="yearSelect-${siteCode}" class="year-select">
           ${uniqueYears.map(year => `<option value="${year}"${year === currentYear ? ' selected' : ''}>${year}</option>`).join('')}
-        </select> Download: <a href="SitesToDate/${siteCode}.csv">${siteCode}.csv</a>
+        </select>  Download: <a href="SitesToDate/${siteCode}.csv">${siteCode}.csv</a>
       </div>
       <div id="chart-container-${siteCode}" style="height: 300px;"></div>
     </div>
