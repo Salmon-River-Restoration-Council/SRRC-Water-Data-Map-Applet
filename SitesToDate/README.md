@@ -1,0 +1,1 @@
+Copy the contents of the recent SiteToDate `.csv` files into this directory
