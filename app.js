@@ -25,7 +25,6 @@ function checkCsvFileExists(siteCode, callback) {
   xhr.send();
 }
 
-// Modify the addMarkers function to include the file existence check
 function addMarkers(data) {
   data.forEach(([siteName, siteCode, longitude, latitude]) => {
     if (latitude && longitude) {
@@ -53,6 +52,9 @@ function addMarkers(data) {
 
         // Create a circle marker on the map at the given latitude and longitude
         const marker = L.circleMarker([latitude, longitude], markerOptions).addTo(map);
+
+        // Bind a tooltip to the marker that will show on hover
+        marker.bindTooltip(siteName, { permanent: false, direction: 'top', offset: L.point(0, -10) });
 
         // Add a click event listener to the marker
         marker.on('click', () => {
