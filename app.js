@@ -6,30 +6,6 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
   attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
 }).addTo(map);
 
-
-  // Add a cache-busting query parameter to the URL
-  const cacheBustingUrl = url + '?_=' + new Date().getTime();
-
-  xhr.open('HEAD', cacheBustingUrl, true);
-
-  // Set cache control headers
-  xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  xhr.setRequestHeader('Pragma', 'no-cache');
-  xhr.setRequestHeader('Expires', '0');
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (xhr.status === 200) {
-        callback(true); // File exists
-      } else {
-        callback(false); // File does not exist
-      }
-    }
-  };
-
-  xhr.send();
-}
-
 // Initialize a variable to store the current siteCode
 let currentSiteCode = null;
 
