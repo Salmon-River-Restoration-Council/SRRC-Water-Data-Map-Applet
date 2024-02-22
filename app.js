@@ -6,6 +6,30 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
   attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
 }).addTo(map);
 
+
+  // Add a cache-busting query parameter to the URL
+  const cacheBustingUrl = url + '?_=' + new Date().getTime();
+
+  xhr.open('HEAD', cacheBustingUrl, true);
+
+  // Set cache control headers
+  xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  xhr.setRequestHeader('Pragma', 'no-cache');
+  xhr.setRequestHeader('Expires', '0');
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        callback(true); // File exists
+      } else {
+        callback(false); // File does not exist
+      }
+    }
+  };
+
+  xhr.send();
+}
+
 // Initialize a variable to store the current siteCode
 let currentSiteCode = null;
 
@@ -51,11 +75,14 @@ function addMarkers(data) {
           markerOptions.fillColor = 'red';
         }
 
+        // Create a circle marker on the map at the given latitude and longitude
         const marker = L.circleMarker([latitude, longitude], markerOptions).addTo(map);
 
+        // Add a click event listener to the marker
         marker.on('click', () => {
           if (exists) {
             currentSiteCode = siteCode; // Store the current siteCode
+            // Load site data, create popup content, and render the chart
             loadSiteData(siteCode, (chartData, uniqueYears) => {
               popupContent = createPopupContent(siteName, siteCode, uniqueYears);
               marker.bindPopup(popupContent, { minWidth: 500 }).openPopup();
@@ -66,6 +93,7 @@ function addMarkers(data) {
               }
             });
           } else {
+            // If the file does not exist, just show the popup with the message
             marker.bindPopup(popupContent, { minWidth: 500 }).openPopup();
           }
         });
@@ -75,10 +103,10 @@ function addMarkers(data) {
 }
 
 // Define a function to create the popup content
-// Define a function to create the popup content
 function createPopupContent(siteName, siteCode, uniqueYears) {
   const currentYear = new Date().getFullYear().toString();
 
+  // Construct the HTML for the popup with a dropdown for year selection and a chart container
   return `
     <div style="width: 490px;">
       <strong>${siteName}</strong>
@@ -101,12 +129,13 @@ function renderChart(containerId, chartData) {
     const canvas = document.createElement('canvas');
     chartContainer.appendChild(canvas);
     const ctx = canvas.getContext('2d');
+    // Create a new Chart instance and render it into the canvas
     new Chart(ctx, {
       type: 'line',
       data: {
         labels: chartData.labels,
         datasets: [{
-          label: 'Temperature (°C)',
+          label: 'Temperature (\u00B0C)',
           data: chartData.data,
           backgroundColor: 'rgba(54, 162, 235, 0.2)',
           borderColor: 'rgba(54, 162, 235, 1)',
@@ -159,15 +188,12 @@ function loadSiteData(siteCode, callback) {
 
 // Define a function to get chart data for a specific year
 function getChartDataForYear(data, selectedYear) {
-  // Ensure selectedYear is a string since we're comparing with string values
   selectedYear = selectedYear.toString();
   const filteredData = data.filter(entry => {
-    // Parse the date and compare the year as a string
     const entryYear = new Date(entry.DateTime).getFullYear().toString();
     return entryYear === selectedYear;
   });
 
-  // If there's no data for the selected year, return empty arrays
   if (filteredData.length === 0) {
     return { labels: [], data: [] };
   }

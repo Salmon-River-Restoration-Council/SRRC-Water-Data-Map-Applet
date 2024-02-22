@@ -4,6 +4,11 @@
   border-radius: 12px; /* Rounded corners */
 }
 
+/* Change the background color of the popup tip */
+.leaflet-popup-tip-container .leaflet-popup-tip {
+  background: #2e4d1e; /* Replace #yourColor with the same color as the popup background */
+}
+
 .leaflet-popup-content {
   font-size: 14px; /* Adjust font size as needed */
 }

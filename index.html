@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>SRRC Water Data Mapplet</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
+
 </head>
 <body>
 
@@ -14,6 +17,24 @@
 <!-- <select id="yearSelect"></select> -->
 
 <script src="app.js"></script>
+<script>
+  window.onload = function() {
+    // Fetch the Markdown file
+    fetch('./README.md')
+      .then(response => response.text())
+      .then(text => {
+        // Convert Markdown to HTML
+        var converter = new showdown.Converter(),
+            html = converter.makeHtml(text);
+        // Insert the HTML content into the div with id="content"
+        document.getElementById('content').innerHTML = html;
+      });
+  };
+</script>
+<div id="content"></div>
+
+
+
 
 </body>
 </html>
