@@ -66,15 +66,12 @@ You should now see the SRRC Water Data Mapplet running locally.
 - `app.js`: The JavaScript file that contains the logic for map interaction and data visualization.
 - `pyserve.bat`: A batch file for serving the directory on Windows.
 - `pyserve.sh`: A shell script for serving the directory on Unix-based systems.
+- `SitesToDate/`: Directory containing the relevant site data CSV files.
+- `Water_Sites_LatLon.csv`: File containing the latitude and longitude information of different sites.
 
 ## Libraries Used
 
 - [Leaflet](https://leafletjs.com/) for interactive maps
 - [Chart.js](https://www.chartjs.org/) for responsive charts
 - [PapaParse](https://www.papaparse.com/) for parsing CSV files
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
 
