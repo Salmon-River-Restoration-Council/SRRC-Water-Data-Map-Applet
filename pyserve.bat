@@ -1,3 +1,4 @@
-@echo of
+@echo off
 cd %~dp0
-python -m http.server
+py -3 -m http.server
+pause
