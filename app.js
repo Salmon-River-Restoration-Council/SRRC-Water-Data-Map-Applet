@@ -9,6 +9,10 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
 // Initialize a variable to store the current siteCode
 let currentSiteCode = null;
 
+// Initialize layer groups for air and water sites
+const airSitesLayer = L.layerGroup().addTo(map);
+const waterSitesLayer = L.layerGroup().addTo(map);
+
 // Define a function to check if a CSV file exists for the given siteCode
 function checkCsvFileExists(siteCode, callback) {
   const xhr = new XMLHttpRequest();
@@ -31,8 +35,8 @@ function addMarkers(data) {
       // Check if the CSV file exists
       checkCsvFileExists(siteCode, (exists) => {
         let markerOptions = {
-          color: 'lightblue',
-          fillColor: 'blue',
+          color: siteCode.includes('AIR') ? 'white' : 'white',
+          fillColor: siteCode.includes('AIR') ? 'white' : 'lightblue',
           fillOpacity: 0.5,
           radius: 5
         };
@@ -42,7 +46,6 @@ function addMarkers(data) {
         if (exists) {
           // File exists, proceed as normal
           popupContent = createPopupContent(siteName, siteCode, []);
-          markerOptions.fillColor = 'blue';
         } else {
           // File does not exist, show a message and use a red marker
           popupContent = `No data available for ${siteCode}`;
@@ -51,7 +54,7 @@ function addMarkers(data) {
         }
 
         // Create a circle marker on the map at the given latitude and longitude
-        const marker = L.circleMarker([latitude, longitude], markerOptions).addTo(map);
+        const marker = L.circleMarker([latitude, longitude], markerOptions);
 
         // Bind a tooltip to the marker that will show on hover
         marker.bindTooltip(siteName, { permanent: false, direction: 'top', offset: L.point(0, -10) });
@@ -64,7 +67,6 @@ function addMarkers(data) {
             loadSiteData(siteCode, (chartData, uniqueYears) => {
               popupContent = createPopupContent(siteName, siteCode, uniqueYears);
               marker.bindPopup(popupContent, { minWidth: 500 }).openPopup();
-              console.log('Chart Data for Rendering:', chartData); // Debugging line
               renderChart(`chart-container-${siteCode}`, chartData);
               if (uniqueYears.length > 1) { // Only attach listener if more than one year of data
                 attachYearSelectListener(siteCode, chartData);
@@ -75,6 +77,13 @@ function addMarkers(data) {
             marker.bindPopup(popupContent, { minWidth: 500 }).openPopup();
           }
         });
+
+        // Add the marker to the appropriate layer
+        if (siteCode.includes('AIR')) {
+          marker.addTo(airSitesLayer);
+        } else {
+          marker.addTo(waterSitesLayer);
+        }
       });
     }
   });
@@ -188,7 +197,33 @@ function getUniqueYears(data) {
   return [...new Set(years)].sort((a, b) => b - a);
 }
 
-// Parse a CSV file containing site locations and add markers to the map
+// Toggle control for air and water sites
+const toggleControl = L.control({position: 'topright'});
+toggleControl.onAdd = function (map) {
+  const div = L.DomUtil.create('div', 'toggle-control');
+  div.innerHTML = '<form><input type="checkbox" id="waterSitesToggle" checked><label for="waterSitesToggle">Water Sites</label><br><input type="checkbox" id="airSitesToggle" checked><label for="airSitesToggle">Air Sites</label></form>';
+  return div;
+};
+toggleControl.addTo(map);
+
+// Event listeners for toggling sites
+document.getElementById('waterSitesToggle').addEventListener('change', function(e) {
+  if (this.checked) {
+    waterSitesLayer.addTo(map);
+  } else {
+    waterSitesLayer.remove();
+  }
+});
+
+document.getElementById('airSitesToggle').addEventListener('change', function(e) {
+  if (this.checked) {
+    airSitesLayer.addTo(map);
+  } else {
+    airSitesLayer.remove();
+  }
+});
+
+// Load site data and add markers to the map
 Papa.parse("Water_Sites_LatLon.csv", {
   download: true,
   header: false,
