@@ -9,9 +9,10 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
 // Initialize a variable to store the current siteCode
 let currentSiteCode = null;
 
-// Initialize layer groups for air and water sites
+// Initialize layer groups for air, water sites, and unavailable data
 const airSitesLayer = L.layerGroup().addTo(map);
 const waterSitesLayer = L.layerGroup().addTo(map);
+const unavailableDataLayer = L.layerGroup().addTo(map); // New layer for unavailable data
 
 // Define a function to check if a CSV file exists for the given siteCode
 function checkCsvFileExists(siteCode, callback) {
@@ -35,23 +36,14 @@ function addMarkers(data) {
       // Check if the CSV file exists
       checkCsvFileExists(siteCode, (exists) => {
         let markerOptions = {
-          color: siteCode.includes('AIR') ? 'white' : 'white',
-          fillColor: siteCode.includes('AIR') ? 'white' : 'lightblue',
+          color: exists ? (siteCode.includes('AIR') ? 'white' : 'lightblue') : 'red',
+          fillColor: exists ? (siteCode.includes('AIR') ? 'white' : 'lightblue') : 'red', // Use red for unavailable data
           fillOpacity: 0.5,
           radius: 5
         };
 
-        let popupContent = '';
-
-        if (exists) {
-          // File exists, proceed as normal
-          popupContent = createPopupContent(siteName, siteCode, []);
-        } else {
-          // File does not exist, show a message and use a red marker
-          popupContent = `No data available for ${siteCode}`;
-          markerOptions.color = 'red';
-          markerOptions.fillColor = 'red';
-        }
+        // Initially, set popup content for unavailable data
+        let popupContent = `No data available for ${siteCode}`;
 
         // Create a circle marker on the map at the given latitude and longitude
         const marker = L.circleMarker([latitude, longitude], markerOptions);
@@ -62,24 +54,27 @@ function addMarkers(data) {
         // Add a click event listener to the marker
         marker.on('click', () => {
           if (exists) {
-            currentSiteCode = siteCode; // Store the current siteCode
-            // Load site data, create popup content, and render the chart
+            // Load site data, prepare chart data, and update popup content dynamically
             loadSiteData(siteCode, (chartData, uniqueYears) => {
               popupContent = createPopupContent(siteName, siteCode, uniqueYears);
               marker.bindPopup(popupContent, { minWidth: 500 }).openPopup();
+
+              // Render the initial chart for the latest year
               renderChart(`chart-container-${siteCode}`, chartData);
-              if (uniqueYears.length > 1) { // Only attach listener if more than one year of data
-                attachYearSelectListener(siteCode, chartData);
-              }
+
+              // Attach the year select listener to update the chart based on selected year
+              attachYearSelectListener(siteCode, chartData);
             });
           } else {
-            // If the file does not exist, just show the popup with the message
+            // For unavailable data, just show the popup with the message
             marker.bindPopup(popupContent, { minWidth: 500 }).openPopup();
           }
         });
 
         // Add the marker to the appropriate layer
-        if (siteCode.includes('AIR')) {
+        if (!exists) {
+          marker.addTo(unavailableDataLayer);
+        } else if (siteCode.includes('AIR')) {
           marker.addTo(airSitesLayer);
         } else {
           marker.addTo(waterSitesLayer);
@@ -88,6 +83,7 @@ function addMarkers(data) {
     }
   });
 }
+
 
 // Define a function to create the popup content
 function createPopupContent(siteName, siteCode, uniqueYears) {
@@ -197,16 +193,31 @@ function getUniqueYears(data) {
   return [...new Set(years)].sort((a, b) => b - a);
 }
 
-// Toggle control for air and water sites
-const toggleControl = L.control({position: 'topright'});
+// Toggle control for air, water sites, and unavailable data
+const toggleControl = L.control({ position: 'topright' });
 toggleControl.onAdd = function (map) {
   const div = L.DomUtil.create('div', 'toggle-control');
-  div.innerHTML = '<form><input type="checkbox" id="waterSitesToggle" checked><label for="waterSitesToggle">Water Sites</label><br><input type="checkbox" id="airSitesToggle" checked><label for="airSitesToggle">Air Sites</label></form>';
+  div.innerHTML = `
+    <style>
+      .toggle-control label {
+        color: white;
+        background-color: transparent;
+      }
+    </style>
+    <form>
+      <input type="checkbox" id="waterSitesToggle" checked>
+      <label for="waterSitesToggle">Water Sites</label><br>
+      <input type="checkbox" id="airSitesToggle" checked>
+      <label for="airSitesToggle">Air Sites</label><br>
+      <input type="checkbox" id="unavailableDataToggle" checked>
+      <label for="unavailableDataToggle">Unavailable Data</label>
+    </form>
+  `;
   return div;
 };
 toggleControl.addTo(map);
 
-// Event listeners for toggling sites
+// Event listeners for toggling sites and unavailable data markers
 document.getElementById('waterSitesToggle').addEventListener('change', function(e) {
   if (this.checked) {
     waterSitesLayer.addTo(map);
@@ -220,6 +231,14 @@ document.getElementById('airSitesToggle').addEventListener('change', function(e)
     airSitesLayer.addTo(map);
   } else {
     airSitesLayer.remove();
+  }
+});
+
+document.getElementById('unavailableDataToggle').addEventListener('change', function(e) {
+  if (this.checked) {
+    unavailableDataLayer.addTo(map);
+  } else {
+    unavailableDataLayer.remove();
   }
 });
 
