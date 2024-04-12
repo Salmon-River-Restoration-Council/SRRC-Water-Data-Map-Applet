@@ -1,10 +1,21 @@
 // Initialize the map with a center point and zoom level
 const map = L.map('map').setView([41.25999138216857, -123.20132665850865], 10);
 
-// Add a tile layer to the map using Esri's World Imagery service for satellite images
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+// Basemap layers
+const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-}).addTo(map);
+});
+
+const topo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles © Esri — Esri, DeLorme, NAVTEQ, TomTom, Intermap, increment P Corp., GEBCO, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+});
+
+const streets = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles © Esri — Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
+});
+
+// Add the default layer
+satellite.addTo(map);
 
 // Initialize a variable to store the current siteCode
 let currentSiteCode = null;
@@ -13,6 +24,25 @@ let currentSiteCode = null;
 const airSitesLayer = L.layerGroup().addTo(map);
 const waterSitesLayer = L.layerGroup().addTo(map);
 const unavailableDataLayer = L.layerGroup().addTo(map); // New layer for unavailable data
+
+// Base layers for layer control
+const baseMaps = {
+  "Satellite": satellite,
+  "Topographic": topo,
+  "Streets": streets
+};
+
+// Overlay layers for layer control (you can add your own overlays here)
+const overlayMaps = {
+  "Air Sites": airSitesLayer,
+  "Water Sites": waterSitesLayer,
+  "Unavailable Data": unavailableDataLayer
+};
+
+// Add layer control to the map
+L.control.layers(baseMaps, overlayMaps, {
+  position: 'bottomright'
+}).addTo(map);
 
 // Define a function to check if a CSV file exists for the given siteCode
 function checkCsvFileExists(siteCode, callback) {
@@ -37,9 +67,9 @@ function addMarkers(data) {
       checkCsvFileExists(siteCode, (exists) => {
         let markerOptions = {
           color: exists ? (siteCode.includes('AIR') ? 'white' : 'lightblue') : 'red',
-          fillColor: exists ? (siteCode.includes('AIR') ? 'white' : 'lightblue') : 'red', // Use red for unavailable data
-          fillOpacity: 0.5,
-          radius: 5
+          fillColor: exists ? (siteCode.includes('AIR') ? 'black' : 'black') : 'black', // Use red for unavailable data
+          fillOpacity: 0.8,
+          radius: 3
         };
 
         // Initially, set popup content for unavailable data
