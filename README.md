@@ -3,6 +3,10 @@
 
 This repository contains the code for a web-based mapplet that visualizes water data on an interactive map. The mapplet uses Leaflet.js for mapping, Chart.js for charting, and PapaParse for parsing CSV data.
 
+## WORK IN PROGRESS
+
+- May not be production ready.
+
 ## Features
 
 - Interactive map with zoom and pan capabilities
