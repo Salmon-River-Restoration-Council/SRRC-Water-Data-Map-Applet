@@ -1,7 +1,7 @@
 
-# SRRC Water Data Mapplet
+# SRRC Water Data Map
 
-This repository contains the code for a web-based mapplet that visualizes water data on an interactive map. The mapplet uses Leaflet.js for mapping, Chart.js for charting, and PapaParse for parsing CSV data.
+This repository contains the code for a web-based app that visualizes water data on an interactive map. The mapplet uses Leaflet.js for mapping, Chart.js for charting, and PapaParse for parsing CSV data.
 
 ## WORK IN PROGRESS
 
