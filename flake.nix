@@ -19,7 +19,7 @@
           buildInputs = with pkgs; [
             python3
             python3Packages.pip
-            python3Packages.http-server
+            python3Packages.httpserver
           ];
 
           shellHook = ''
